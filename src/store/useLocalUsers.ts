@@ -13,6 +13,7 @@ export type LocalUser = {
 type State = {
   users: LocalUser[];
   addUser: (u: Omit<LocalUser, "id">) => void;
+  updateUser: (id: number, u: Omit<LocalUser, "id">) => void;
   removeUser: (id: number) => void;
   clearAll: () => void;
   _nextId: number;
@@ -25,6 +26,10 @@ export const useLocalUsers = create<State>((set, get) => ({
     set((s) => ({
       users: [...s.users, { ...u, id: s._nextId }],
       _nextId: s._nextId + 1,
+    })),
+  updateUser: (id, u) =>
+    set((s) => ({
+      users: s.users.map((x) => (x.id === id ? { ...u, id } : x)),
     })),
   removeUser: (id) => set((s) => ({ users: s.users.filter((x) => x.id !== id) })),
   clearAll: () => set({ users: [], _nextId: 1 }),

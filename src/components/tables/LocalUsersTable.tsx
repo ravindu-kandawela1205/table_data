@@ -4,7 +4,6 @@ import {
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Skeleton } from "@/components/ui/skeleton";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
@@ -12,7 +11,6 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogTrigger,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import {
   ChevronsLeft, ChevronLeft, ChevronRight, ChevronsRight, Plus,
 } from "lucide-react";
@@ -21,8 +19,25 @@ import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel,
   DropdownMenuSeparator, DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import * as z from "zod";
+import {
+  Form, FormControl, FormField, FormItem, FormLabel, FormMessage,
+} from "@/components/ui/form";
 
 const PAGE_SIZE_OPTIONS = [5, 10, 20];
+
+const userSchema = z.object({
+  firstName: z.string().min(1, "First name is required"),
+  lastName: z.string().min(1, "Last name is required"),
+  age: z.number().min(18, "Age must be at least 18").max(150, "Age must be less than 150"),
+  gender: z.enum(["male", "female", "other"]),
+  email: z.string().email("Invalid email address"),
+  phone: z.string().optional(),
+});
+
+type UserFormData = z.infer<typeof userSchema>;
 
 const LocalUsersTable: React.FC = () => {
   const { users, addUser, removeUser } = useLocalUsers();
@@ -34,12 +49,18 @@ const LocalUsersTable: React.FC = () => {
 
   // add dialog state
   const [open, setOpen] = useState(false);
-  const [firstName, setFirstName] = useState("");
-  const [lastName, setLastName] = useState("");
-  const [age, setAge] = useState<number | "">("");
-  const [gender, setGender] = useState("male");
-  const [email, setEmail] = useState("");
-  const [phone, setPhone] = useState("");
+
+  const form = useForm<UserFormData>({
+    resolver: zodResolver(userSchema),
+    defaultValues: {
+      firstName: "",
+      lastName: "",
+      age: 0,
+      gender: "male",
+      email: "",
+      phone: "",
+    },
+  });
 
   // derived
   const total = users.length;
@@ -76,29 +97,17 @@ const LocalUsersTable: React.FC = () => {
     });
   };
 
-  const resetForm = () => {
-    setFirstName("");
-    setLastName("");
-    setAge("");
-    setGender("male");
-    setEmail("");
-    setPhone("");
-  };
-
-  const handleAdd = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!firstName.trim() || !lastName.trim() || !age || !email.trim()) return;
+  const handleAdd = (data: UserFormData) => {
     addUser({
-      firstName: firstName.trim(),
-      lastName: lastName.trim(),
-      age: Number(age),
-      gender,
-      email: email.trim(),
-      phone: phone.trim() || undefined,
+      firstName: data.firstName,
+      lastName: data.lastName,
+      age: data.age,
+      gender: data.gender,
+      email: data.email,
+      phone: data.phone || undefined,
     });
-    resetForm();
+    form.reset();
     setOpen(false);
-    // jump to last page to see the new record
     const newTotal = total + 1;
     const newPageCount = Math.max(1, Math.ceil(newTotal / pageSize));
     setPage(newPageCount);
@@ -123,55 +132,108 @@ const LocalUsersTable: React.FC = () => {
               <DialogTitle>Add User</DialogTitle>
             </DialogHeader>
 
-            <form onSubmit={handleAdd} className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-4">
-              <div>
-                <Label htmlFor="firstName">First Name</Label>
-                <Input id="firstName" value={firstName} onChange={(e) => setFirstName(e.target.value)} required />
-              </div>
-              <div>
-                <Label htmlFor="lastName">Last Name</Label>
-                <Input id="lastName" value={lastName} onChange={(e) => setLastName(e.target.value)} required />
-              </div>
-              <div>
-                <Label htmlFor="age">Age</Label>
-                <Input
-                  id="age"
-                  type="number"
-                  min={1}
-                  value={age}
-                  onChange={(e) => setAge(e.target.value === "" ? "" : Number(e.target.value))}
-                  required
+            <Form {...form}>
+              <form onSubmit={form.handleSubmit(handleAdd)} className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-4">
+                <FormField
+                  control={form.control}
+                  name="firstName"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>First Name</FormLabel>
+                      <FormControl>
+                        <Input {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
                 />
-              </div>
-              <div>
-                <Label htmlFor="gender">Gender</Label>
-                <Select value={gender} onValueChange={setGender}>
-                  <SelectTrigger id="gender">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="male">Male</SelectItem>
-                    <SelectItem value="female">Female</SelectItem>
-                    <SelectItem value="other">Other</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="sm:col-span-2">
-                <Label htmlFor="email">Email</Label>
-                <Input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
-              </div>
-              <div className="sm:col-span-2">
-                <Label htmlFor="phone">Phone (optional)</Label>
-                <Input id="phone" value={phone} onChange={(e) => setPhone(e.target.value)} />
-              </div>
+                <FormField
+                  control={form.control}
+                  name="lastName"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Last Name</FormLabel>
+                      <FormControl>
+                        <Input {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="age"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Age</FormLabel>
+                      <FormControl>
+                        <Input
+                          type="number"
+                          {...field}
+                          onChange={(e) => field.onChange(e.target.value === "" ? 0 : Number(e.target.value))}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="gender"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Gender</FormLabel>
+                      <Select onValueChange={field.onChange} value={field.value}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="male">Male</SelectItem>
+                          <SelectItem value="female">Female</SelectItem>
+                          <SelectItem value="other">Other</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="email"
+                  render={({ field }) => (
+                    <FormItem className="sm:col-span-2">
+                      <FormLabel>Email</FormLabel>
+                      <FormControl>
+                        <Input type="email" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="phone"
+                  render={({ field }) => (
+                    <FormItem className="sm:col-span-2">
+                      <FormLabel>Phone (optional)</FormLabel>
+                      <FormControl>
+                        <Input {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
 
-              <DialogFooter className="sm:col-span-2 mt-2">
-                <Button type="button" variant="outline" onClick={() => setOpen(false)}>
-                  Cancel
-                </Button>
-                <Button type="submit">Save</Button>
-              </DialogFooter>
-            </form>
+                <DialogFooter className="sm:col-span-2 mt-2">
+                  <Button type="button" variant="outline" onClick={() => setOpen(false)}>
+                    Cancel
+                  </Button>
+                  <Button type="submit">Save</Button>
+                </DialogFooter>
+              </form>
+            </Form>
           </DialogContent>
         </Dialog>
       </div>
