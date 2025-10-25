@@ -65,6 +65,7 @@ export default function LocalUsersPage() {
    */
   const form = useForm<FormInput, any, FormOutput>({
     resolver: zodResolver(schema),
+    mode: "onTouched",
     defaultValues: {
       firstName: "",
       lastName: "",

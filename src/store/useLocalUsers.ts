@@ -1,4 +1,5 @@
 import { create } from "zustand";
+import { persist } from "zustand/middleware";
 
 export type LocalUser = {
   id: number;
@@ -19,18 +20,23 @@ type State = {
   _nextId: number;
 };
 
-export const useLocalUsers = create<State>((set, get) => ({
-  users: [],
-  _nextId: 1,
-  addUser: (u) =>
-    set((s) => ({
-      users: [...s.users, { ...u, id: s._nextId }],
-      _nextId: s._nextId + 1,
-    })),
-  updateUser: (id, u) =>
-    set((s) => ({
-      users: s.users.map((x) => (x.id === id ? { ...u, id } : x)),
-    })),
-  removeUser: (id) => set((s) => ({ users: s.users.filter((x) => x.id !== id) })),
-  clearAll: () => set({ users: [], _nextId: 1 }),
-}));
+export const useLocalUsers = create<State>()(persist(
+  (set, get) => ({
+    users: [],
+    _nextId: 1,
+    addUser: (u) =>
+      set((s) => ({
+        users: [...s.users, { ...u, id: s._nextId }],
+        _nextId: s._nextId + 1,
+      })),
+    updateUser: (id, u) =>
+      set((s) => ({
+        users: s.users.map((x) => (x.id === id ? { ...u, id } : x)),
+      })),
+    removeUser: (id) => set((s) => ({ users: s.users.filter((x) => x.id !== id) })),
+    clearAll: () => set({ users: [], _nextId: 1 }),
+  }),
+  {
+    name: "local-users-storage",
+  }
+));

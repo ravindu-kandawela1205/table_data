@@ -7,11 +7,10 @@ export async function getUsers(
 ): Promise<{ data: User[]; total: number }> {
   const skip = (page - 1) * limit;
 
-  // DummyJSON returns { users, total, skip, limit }
   const res = await axios.get(`https://dummyjson.com/users?limit=${limit}&skip=${skip}`);
 
   const { users, total } = res.data;
 
-  // ✅ Re-map the fields to your expected shape
+ 
   return { data: users, total };
 }
